@@ -43,3 +43,37 @@ liveSocket.connect()
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket
 
+
+import Draw from 'draw-on-canvas'
+
+// Create a new hook Hooks object
+let Hooks = {}
+
+// registering the Hook object in the LiveSocket:
+let LiveSocket = new LiveSocket("/live", Socket, {params: {_csrf_token: csrfToken}, hooks: Hooks})
+
+// Adding a new Draw Hook
+Hooks.Draw = {}
+
+// we need to implement the mounted function, which is called when the hook is mounted
+//This is where we set up the Canvas
+Hooks.Draw = {
+    mounted() {
+        this.draw = new Draw(this.el, 384, 384, {
+            backgroundColor: "black",
+            strokeColor: "white",
+            strokeWeight: 10
+        })
+
+        // handleEvent, that listens for the reset event, and resets the canvas:
+        this.handleEvent("reset", () => {
+            this.draw.reset()
+        })
+
+        //we add another handleEvent
+        // This grabs the contents of the canvas as a data URL and sends it to the server using pushEvent:
+        this.handleEvent("predict", () => {
+            this.pushEvent("image", this.raw.canvas.toDataURL('image/png'))
+        })
+    }
+}

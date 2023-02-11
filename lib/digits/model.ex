@@ -2,8 +2,8 @@ defmodule Digits.Model do
   @moduledoc"""
   This is the Digits Machine Learning Model
   """
-
   require Axon
+  
 #extracting the dataset from the Scidata package
   def download do
     Scidata.MNIST.download()
@@ -92,5 +92,27 @@ defmodule Digits.Model do
 
   def path do
     Path.join(Application.app_dir(:digits, "priv"), "model.axon")
+  end
+
+  #adding the function that does the prediction
+  def predict(path) do
+
+    #First, we read the image path and convert it to grayscale. This reduces the number of channels from 3 to 1. Then we resize the image to 28 x 28.
+    {:ok, mat} = Evision.imread(path, flags: Evision.cv_IMREAD_GRAYSCALE)
+    {:ok, mat} = Evision.resize(mat, [28, 28])
+
+    #We also need to convert the image data to an Nx tensor and reshape it to an expected correct shape. Our machine learning model expects a "batch" of inputs
+    data =
+      Evision.Nx.to_nx(mat)
+      |> Nx.reshape({1, 28, 28})
+      |> List.wrap()
+      |> Nx.stack()
+
+    {model, state} = load!()
+
+    model
+    |> Axon.predict(state, data, compiler: EXLA)
+    |> Nx.argmax()
+    |> Nx.to_number()
   end
 end
